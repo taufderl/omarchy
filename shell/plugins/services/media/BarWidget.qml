@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Ui
 import qs.Commons
+import "MediaModel.js" as MediaModel
 
 BarWidget {
   id: root
@@ -131,13 +132,13 @@ BarWidget {
             anchors.margins: Style.space(2)
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
-            source: root.activePlayer && root.activePlayer.trackArtUrl ? root.activePlayer.trackArtUrl : ""
+            source: root.activePlayer && root.activePlayer.trackArtUrl && MediaModel.isSafeArtUrl(root.activePlayer.trackArtUrl) ? root.activePlayer.trackArtUrl : ""
             visible: source !== ""
           }
 
           Text {
             anchors.centerIn: parent
-            visible: !root.activePlayer || !root.activePlayer.trackArtUrl
+            visible: !root.activePlayer || !root.activePlayer.trackArtUrl || !MediaModel.isSafeArtUrl(root.activePlayer.trackArtUrl)
             text: "󰝚"
             color: root.bar.foreground
             font.family: root.bar.fontFamily

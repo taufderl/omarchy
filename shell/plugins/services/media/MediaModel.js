@@ -107,6 +107,43 @@ function trackChanged(previousSignature, player) {
   return trackSignature(player) !== String(previousSignature || "")
 }
 
+// MPRIS metadata comes from whatever is on the session bus, and artUrl is
+// handed straight to a QML Image, which will dereference any URL it is given.
+// Nothing validates it today, so a player can make the shell issue arbitrary
+// GETs -- including to loopback and private ranges the shell can reach but a
+// remote party cannot.
+//
+// Browsers are not the risk here: Chromium fetches MediaSession artwork itself
+// and republishes it as a re-encoded local file, so a web page cannot choose
+// this URL. The risk is any local process that publishes MPRIS directly.
+// Treating it as untrusted is cheap defence in depth.
+//
+// file:// is allowed: it causes no network traffic and the shell can already
+// read anything the user can, so it grants nothing -- and it is what Chromium
+// and most local players actually publish. http(s) is allowed only to a public
+// host. Everything else is rejected.
+function isSafeArtUrl(url) {
+  var value = String(url || "")
+  if (/^file:\/\//i.test(value)) return true
+
+  var match = /^https?:\/\/([^\/?#]+)/i.exec(value)
+  if (!match) return false
+
+  var host = match[1].replace(/^[^@]*@/, "").replace(/:\d+$/, "").replace(/^\[|\]$/g, "").toLowerCase()
+  if (!host) return false
+  if (host === "localhost" || /\.localhost$/.test(host)) return false
+  if (host === "::1" || host === "::") return false
+  if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return false
+  if (/^169\.254\.\d{1,3}\.\d{1,3}$/.test(host)) return false
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return false
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(host)) return false
+  if (/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host)) return false
+  if (/^0\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return false
+  if (/^(fc|fd|fe[89ab])[0-9a-f]{0,2}:/.test(host)) return false
+
+  return true
+}
+
 function labelFor(player) {
   if (!player) return ""
   return player.trackTitle || player.identity || player.desktopEntry || ""
@@ -136,6 +173,7 @@ if (typeof module !== "undefined") {
     playerKey: playerKey,
     trackSignature: trackSignature,
     trackChanged: trackChanged,
+    isSafeArtUrl: isSafeArtUrl,
     labelFor: labelFor,
     osdMessage: osdMessage
   }

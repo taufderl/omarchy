@@ -31,7 +31,7 @@ Item {
   readonly property string title: activePlayer ? (activePlayer.trackTitle || "") : ""
   readonly property string artist: activePlayer ? (activePlayer.trackArtist || "") : ""
   readonly property string album: activePlayer && activePlayer.trackAlbum ? activePlayer.trackAlbum : ""
-  readonly property string artUrl: activePlayer && activePlayer.trackArtUrl ? activePlayer.trackArtUrl : ""
+  readonly property string artUrl: activePlayer && activePlayer.trackArtUrl && MediaModel.isSafeArtUrl(activePlayer.trackArtUrl) ? activePlayer.trackArtUrl : ""
   readonly property string identity: activePlayer ? (activePlayer.identity || activePlayer.desktopEntry || "") : ""
 
   function isProxyPlayer(player) {
@@ -466,7 +466,7 @@ Item {
       title: p ? (p.trackTitle || "") : "",
       artist: p ? (p.trackArtist || "") : "",
       album: p && p.trackAlbum ? p.trackAlbum : "",
-      artUrl: p && p.trackArtUrl ? p.trackArtUrl : "",
+      artUrl: p && p.trackArtUrl && MediaModel.isSafeArtUrl(p.trackArtUrl) ? p.trackArtUrl : "",
       canGoNext: p ? !!p.canGoNext : false,
       canGoPrevious: p ? !!p.canGoPrevious : false,
       canTogglePlaying: p ? !!p.canTogglePlaying : false
