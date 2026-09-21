@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# omarchy:summary=Print the Omarchy source root to use as the source of a privileged copy
+
+# $OMARCHY_PATH is an ordinary environment variable. Any caller can set it, and
+# the unprivileged shell expands it before `sudo` ever runs, so it is the wrong
+# thing to read when the path decides what gets copied into a root-owned
+# destination: `OMARCHY_PATH=/tmp/evil omarchy refresh pacman` otherwise picks
+# the file that lands in /etc/pacman.conf.
+#
+# Re-derive it the way default/bash/env-bootstrap does -- from /etc/omarchy.conf,
+# which is root-owned and written by omarchy-dev-link -- but discard the
+# inherited value first, so what root declared wins over what the caller
+# exported. A dev-linked checkout keeps working, because that path was recorded
+# by root via `sudo tee` rather than by the environment.
+#
+# Same reasoning as the validate_trusted_* helpers added to omarchy-plymouth-set
+# in #8934; this exists so its sibling scripts need not each carry a copy.
+
+set -euo pipefail
+
+unset OMARCHY_PATH
+
+conf=/etc/omarchy.conf
+if [[ -e $conf ]]; then
+  # Only honour the config if root owns it and nobody else can write it —
+  # sourcing it runs its contents in this shell.
+  if [[ -f $conf && ! -L $conf ]] &&
+    (($(stat -c %u -- "$conf") == 0)) &&
+    (( (8#$(stat -c %a -- "$conf") & 0022) == 0 )); then
+    # shellcheck source=/dev/null
+    . "$conf"
+  else
+    echo "omarchy-trusted-path: ignoring $conf — it must be a regular root-owned file that only root can write." >&2
+  fi
+fi
+
+trusted_path=${OMARCHY_PATH:-/usr/share/omarchy}
+
+if [[ ! -d $trusted_path ]]; then
+  echo "omarchy-trusted-path: $trusted_path is not a directory." >&2
+  exit 1
+fi
+
+printf '%s\n' "$trusted_path"

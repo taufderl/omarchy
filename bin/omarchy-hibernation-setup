@@ -4,6 +4,11 @@
 # omarchy:requires-sudo=true
 # omarchy:args=[--force] [--no-rebuild]
 
+
+# The source of a privileged copy must not be decided by an environment
+# variable the caller controls; omarchy-trusted-path re-derives it from what
+# root declared in /etc/omarchy.conf.
+omarchy_source=$(omarchy-trusted-path)
 FORCE=false
 NO_REBUILD=false
 for arg in "$@"; do
@@ -115,7 +120,7 @@ fi
 # Ensure keyboard backlight doesn't prevent sleep
 # Install this before writing the resume marker so a failed install remains
 # retryable through the normal setup command.
-if ! install_root_file "$OMARCHY_PATH/default/systemd/system-sleep/keyboard-backlight" \
+if ! install_root_file "$omarchy_source/default/systemd/system-sleep/keyboard-backlight" \
   /usr/lib/systemd/system-sleep/keyboard-backlight 0755; then
   echo "Could not install the keyboard-backlight system-sleep hook" >&2
   exit 1

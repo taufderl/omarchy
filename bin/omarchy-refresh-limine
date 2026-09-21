@@ -3,6 +3,11 @@
 # omarchy:summary=Overwrite the user config for the Limine bootloader and rebuild it.
 # omarchy:requires-sudo=true
 
+
+# The source of a privileged copy must not be decided by an environment
+# variable the caller controls; omarchy-trusted-path re-derives it from what
+# root declared in /etc/omarchy.conf.
+omarchy_source=$(omarchy-trusted-path)
 legacy_uki="/boot/EFI/Linux/$(cat /etc/machine-id)_linux.efi"
 
 if sudo test -f /boot/EFI/Linux/omarchy_linux.efi && sudo test -f "$legacy_uki"; then
@@ -13,7 +18,7 @@ echo "Resetting limine config"
 
 sudo mv /boot/limine.conf /boot/limine.conf.bak
 
-sudo cp "$OMARCHY_PATH/default/limine/limine.conf" /boot/limine.conf
+sudo cp "$omarchy_source/default/limine/limine.conf" /boot/limine.conf
 
 sudo limine-update
 sudo limine-snapper-sync

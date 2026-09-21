@@ -3,6 +3,11 @@
 # omarchy:summary=Overwrite the package configuration for /etc/pacman with the Omarchy default of using its dedicated mirrors and repositories, then update all packages.
 # omarchy:requires-sudo=true
 
+
+# The source of a privileged copy must not be decided by an environment
+# variable the caller controls; omarchy-trusted-path re-derives it from what
+# root declared in /etc/omarchy.conf.
+omarchy_source=$(omarchy-trusted-path)
 sudo cp -f /etc/pacman.conf /etc/pacman.conf.bak
 sudo cp -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
 
@@ -16,8 +21,8 @@ fi
 echo "Setting channel to $channel"
 echo
 
-sudo cp -f "$OMARCHY_PATH/default/pacman/pacman-$channel.conf" /etc/pacman.conf
-sudo cp -f "$OMARCHY_PATH/default/pacman/mirrorlist-$channel" /etc/pacman.d/mirrorlist
+sudo cp -f "$omarchy_source/default/pacman/pacman-$channel.conf" /etc/pacman.conf
+sudo cp -f "$omarchy_source/default/pacman/mirrorlist-$channel" /etc/pacman.d/mirrorlist
 
 # Allow user customization of /etc/pacman.conf before the upgrade runs
 omarchy-hook pre-refresh-pacman
