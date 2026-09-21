@@ -11,10 +11,13 @@ Type=simple
 # If bluetoothd is unavailable (for example in VMs or machines without a
 # usable adapter), skip cleanly instead of entering a restart loop.
 ExecCondition=/usr/bin/systemctl is-active --quiet bluetooth.service
-# NoInputNoOutput auto-accepts pair requests. Safe because the adapter
-# is only `pairable: true` when the user explicitly opens the omarchy
-# bluetoothPanel and starts scanning; outside that window bluez refuses
-# inbound pair attempts at a lower layer.
+# NoInputNoOutput auto-accepts pair requests, so it must only ever be
+# reachable while the user is deliberately pairing. That window is enforced
+# in shell/plugins/panels/bluetooth/Panel.qml (syncPairable): the adapter is
+# set `pairable: true` while a Bluetooth panel is open and the adapter is
+# enabled, and back to false once the last panel closes. BlueZ defaults
+# PairableTimeout to 0, so without that write the adapter would stay pairable
+# until reboot and bluez would keep accepting inbound pair attempts.
 ExecStart=/usr/bin/bt-agent -c NoInputNoOutput
 Restart=on-failure
 RestartSec=2

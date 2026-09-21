@@ -418,6 +418,7 @@ Panel {
       actionFocused = false
       cursorActive = false
     }
+    syncPairable()
   }
 
   // Another per-monitor instance of this widget whose panel is open, if any.
@@ -431,6 +432,18 @@ Panel {
       if (items[i] && items[i] !== root && items[i].opened === true) return items[i]
     }
     return null
+  }
+
+  // bt-agent.service registers a NoInputNoOutput agent for the whole graphical
+  // session, which is only defensible while the user is deliberately pairing.
+  // BlueZ defaults PairableTimeout to 0, so an adapter left pairable stays
+  // pairable until the next reboot. Own the flag the way this panel owns
+  // discovery: on while a panel is open on some monitor and the adapter is
+  // enabled, off once the last one closes.
+  function syncPairable() {
+    if (adapter === null) return
+    var wanted = adapter.enabled === true && (opened === true || openSibling() !== null)
+    if (adapter.pairable !== wanted) adapter.pairable = wanted
   }
 
   function updateFocusedAddress() {
@@ -562,6 +575,9 @@ Panel {
     function onDiscoveringChanged() {
       if (!root.adapter.discovering) root.owesDiscoveryStop = false
     }
+    function onEnabledChanged() {
+      root.syncPairable()
+    }
   }
 
   // A destroyed instance cannot wait for BlueZ confirmations, so it hands any
@@ -569,6 +585,9 @@ Panel {
   // confirmed after this object is gone — and only writes the stop directly
   // when it is the last one standing.
   Component.onDestruction: {
+    // Pairability is plain adapter state rather than a held session, so the
+    // last instance standing just clears it; a sibling still open keeps it.
+    if (adapter !== null && adapter.pairable === true && openSibling() === null) adapter.pairable = false
     if (!owesDiscoveryStop) return
     var items = bar && typeof bar.moduleWidgets === "function" ? bar.moduleWidgets(moduleName) : []
     for (var i = 0; i < items.length; i++) {
